@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     // Print Event
     console.log("Event: ", event);
     const body = event.body ? JSON.parse(event.body) : undefined;
-    
+
     if (!body) {
       return {
         statusCode: 500,
@@ -26,16 +26,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     }
 
     if (!isValidBodyParams(body)) {
-        return {
-            statusCode: 500,
-            headers: {
-            "content-type": "application/json",
-            },
-            body: JSON.stringify({
-            message: `Incorrect type. Must match Movie schema`,
-            schema: schema.definitions["Movie"],
-            }),
-        };
+      return {
+        statusCode: 500,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          message: `Incorrect type. Must match Movie schema`,
+          schema: schema.definitions["Movie"],
+        }),
+      };
     }
 
     const commandOutput = await ddbDocClient.send(

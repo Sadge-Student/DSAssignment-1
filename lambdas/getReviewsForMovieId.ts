@@ -1,43 +1,18 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  GetCommand,
-  QueryCommandInput,
-  QueryCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-const ddbClient = new DynamoDBClient({ region: process.env.REGION });
+const ddbDocClient = createDDbDocClient();
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("Event: ", event);
-    // const parameters = event?.queryStringParameters;
-    // const movieId = parameters ? parseInt(parameters.movieId) : undefined;
     const parameters = event?.pathParameters;
     const movieId = parameters?.movieId
       ? parseInt(parameters.movieId)
       : undefined;
-    const cast = event.queryStringParameters?.cast == "true";
 
     if (!movieId) {
-      return {
-        statusCode: 404,
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ Message: "Missing movie Id" }),
-      };
-    }
-
-    const commandOutput = await ddbClient.send(
-      new GetCommand({
-        TableName: process.env.TABLE_NAME,
-        Key: { movieId: movieId },
-      })
-    );
-    console.log("GetCommand response: ", commandOutput);
-    if (!commandOutput.Item) {
       return {
         statusCode: 404,
         headers: {
@@ -46,32 +21,27 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         body: JSON.stringify({ Message: "Invalid movie Id" }),
       };
     }
-    const body = {
-      data: commandOutput.Item,
+
+    const commandInput = {
+      TableName: process.env.TABLE_NAME,
+      KeyConditionExpression: "movieId = :m",
+      ExpressionAttributeValues: {
+        ":m": movieId,
+      },
     };
 
-    if (cast) {
-      const commandInput: QueryCommandInput = {
-        TableName: process.env.TABLE_NAME,
-        KeyConditionExpression: "movieId = :m",
-        ExpressionAttributeValues: {
-          ":m": movieId,
-        },
-      };
+    const commandOutput = await ddbDocClient.send(
+      new QueryCommand(commandInput)
+    );
 
-      const commandOutput = await ddbClient.send(
-        new QueryCommand(commandInput)
-      );
-      body["cast"] = commandOutput.Items;
-    }
-
-    // Return Response
     return {
       statusCode: 200,
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        data: commandOutput.Items,
+      }),
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));
