@@ -62,7 +62,7 @@ export const reviews: Review[] = [
     review: "I absolutely loved this movie! The plot was captivating, the acting was superb, and the special effects were mind-blowing.",
     reviewDate: "2023-12-05",
     reviewId: 5678,
-    reviewer: "John Doe",
+    reviewerName: "John Doe",
   },
   {
     movieId: 1234,
@@ -70,7 +70,7 @@ export const reviews: Review[] = [
     review: "Great movie with stunning visuals and a compelling story. A bit slow in parts, but overall a fantastic experience.",
     reviewDate: "2023-11-28",
     reviewId: 4685,
-    reviewer: "Alice Smith",
+    reviewerName: "Alice Smith",
   },
   {
     movieId: 1234,
@@ -78,7 +78,7 @@ export const reviews: Review[] = [
     review: "An interesting concept, but the execution was lacking. The characters weren't very engaging, and the plot had several holes.",
     reviewDate: "2023-11-30",
     reviewId: 8567,
-    reviewer: "Bob Johnson",
+    reviewerName: "Bob Johnson",
   },
   {
     movieId: 1234,
@@ -86,7 +86,7 @@ export const reviews: Review[] = [
     review: "Absolutely phenomenal! This movie kept me on the edge of my seat from start to finish. The soundtrack was also incredible.",
     reviewDate: "2023-12-01",
     reviewId: 6428,
-    reviewer: "Carol Martinez",
+    reviewerName: "Carol Martinez",
   },
   {
     movieId: 1234,
@@ -94,7 +94,7 @@ export const reviews: Review[] = [
     review: "Disappointing, given the hype. The special effects were good, but they couldn't make up for the weak storyline and poor character development.",
     reviewDate: "2023-12-03",
     reviewId: 6467,
-    reviewer: "David Lee",
+    reviewerName: "David Lee",
   },
   {
     movieId: 1234,
@@ -102,7 +102,7 @@ export const reviews: Review[] = [
     review: "A solid movie with great acting and a gripping plot. Some of the scenes were truly breathtaking.",
     reviewDate: "2023-12-04",
     reviewId: 1005,
-    reviewer: "Eve Kim",
+    reviewerName: "Eve Kim",
   },
   {
     movieId: 5678,
@@ -110,7 +110,7 @@ export const reviews: Review[] = [
     review: "A masterpiece! This movie exceeded all my expectations. It's a must-watch.",
     reviewDate: "2023-12-06",
     reviewId: 9876,
-    reviewer: "Alice Smith",
+    reviewerName: "Alice Smith",
   },
   {
     movieId: 7890,
@@ -118,7 +118,7 @@ export const reviews: Review[] = [
     review: "It was okay, but I expected more. The acting was good, but the story was lacking.",
     reviewDate: "2023-12-07",
     reviewId: 5432,
-    reviewer: "Bob Johnson",
+    reviewerName: "Bob Johnson",
   },
   {
     movieId: 4567,
@@ -126,7 +126,7 @@ export const reviews: Review[] = [
     review: "Not my cup of tea. The movie didn't live up to the hype.",
     reviewDate: "2023-12-08",
     reviewId: 1234,
-    reviewer: "Emily Davis",
+    reviewerName: "Emily Davis",
   },
   {
     movieId: 9876,
@@ -134,6 +134,6 @@ export const reviews: Review[] = [
     review: "I found the movie to be quite boring. It didn't hold my interest.",
     reviewId: 2468,
     reviewDate: "2023-12-09",
-    reviewer: "Michael Brown",
+    reviewerName: "Michael Brown",
   },
 ];
