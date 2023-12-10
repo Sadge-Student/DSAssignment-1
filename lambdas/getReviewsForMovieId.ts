@@ -8,9 +8,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("Event: ", event);
     const parameters = event?.pathParameters;
-    const movieId = parameters?.movieId
-      ? parseInt(parameters.movieId)
-      : undefined;
+    const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
+    const minRating = event.queryStringParameters?.minRating || "0";
+    const minRatingNumber = parseInt(minRating);
 
     if (!movieId) {
       return {
@@ -22,6 +22,16 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
 
+    if (minRatingNumber < 0 || minRatingNumber > 5) {
+      return {
+        statusCode: 400,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ Message: "Invalid minRating (1-5)" }),
+      };
+    }
+
     const commandInput = {
       TableName: process.env.TABLE_NAME,
       KeyConditionExpression: "movieId = :m",
@@ -30,9 +40,11 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       },
     };
 
-    const commandOutput = await ddbDocClient.send(
-      new QueryCommand(commandInput)
-    );
+    const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
+
+    if (minRatingNumber > 0 && commandOutput.Items) {
+      commandOutput.Items = commandOutput.Items.filter((item) => item.rating >= minRating);
+    }
 
     return {
       statusCode: 200,
@@ -50,7 +62,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ Message: "Internal Server Error" }),
+      //   body: JSON.stringify({ Message: "Internal Server Error" }),
+      body: JSON.stringify({ error }),
     };
   }
 };

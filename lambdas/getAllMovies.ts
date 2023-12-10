@@ -7,7 +7,6 @@ const ddbDocClient = createDDbDocClient();
 
 export const handler: Handler = async (event, context) => {
   try {
-    // Print Event
     console.log("Event: ", event);
 
     const commandOutput = await ddbDocClient.send(
@@ -28,7 +27,6 @@ export const handler: Handler = async (event, context) => {
       data: commandOutput.Items,
     };
 
-    // Return Response
     return {
       statusCode: 200,
       headers: {
