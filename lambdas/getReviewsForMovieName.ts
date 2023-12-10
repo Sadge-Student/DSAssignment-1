@@ -9,8 +9,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     console.log("Event: ", event);
     const parameters = event?.pathParameters;
     const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-    const minRating = event.queryStringParameters?.minRating || "0";
-    const minRatingNumber = parseInt(minRating);
+    const reviewerName = parameters?.reviewName ? decodeURIComponent(parameters.reviewName) : undefined;
 
     if (!movieId) {
       return {
@@ -22,29 +21,27 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
 
-    if (minRatingNumber < 0 || minRatingNumber > 5) {
+    if (!reviewerName) {
       return {
         statusCode: 400,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Invalid minRating (1-5)" }),
+        body: JSON.stringify({ Message: "Reviewer name not provided" }),
       };
     }
 
     const commandInput = {
       TableName: process.env.TABLE_NAME,
       KeyConditionExpression: "movieId = :m",
+      FilterExpression: "reviewerName = :r",
       ExpressionAttributeValues: {
         ":m": movieId,
+        ":r": reviewerName,
       },
     };
 
     const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
-
-    if (minRatingNumber > 0 && commandOutput.Items) {
-      commandOutput.Items = commandOutput.Items.filter((item) => item.rating >= minRating);
-    }
 
     return {
       statusCode: 200,

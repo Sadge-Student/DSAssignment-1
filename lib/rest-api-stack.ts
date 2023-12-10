@@ -101,6 +101,18 @@ export class RestAPIStack extends cdk.Stack {
       },
     });
 
+    const getMovieReviewsByNameFn = new lambdanode.NodejsFunction(this, "GetMovieReviewsByNameFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambdas/getReviewsForMovieName.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: movieReviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -125,6 +137,7 @@ export class RestAPIStack extends cdk.Stack {
     moviesTable.grantReadData(getAllMoviesFn);
     movieReviewsTable.grantReadWriteData(newReviewFn);
     movieReviewsTable.grantReadData(getMovieReviewsFn);
+    movieReviewsTable.grantReadData(getMovieReviewsByNameFn);
 
     const api = new apig.RestApi(this, "RestAPI", {
       description: "demo api",
@@ -152,5 +165,8 @@ export class RestAPIStack extends cdk.Stack {
     const movieReviewEndpoint = movieEndpoint.addResource("reviews");
     movieReviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsFn, { proxy: true }));
     createReviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(newReviewFn, { proxy: true }));
+
+    const movieReviewEndpointByName = movieReviewEndpoint.addResource("{reviewName}");
+    movieReviewEndpointByName.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsByNameFn, { proxy: true }));
   }
 }
