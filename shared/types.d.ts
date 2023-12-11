@@ -19,3 +19,8 @@ export type Review = {
   reviewerName: string;
   reviewDate: string;
 };
+
+export type UpdateReview = {
+  review: string;
+  rating: number;
+};
