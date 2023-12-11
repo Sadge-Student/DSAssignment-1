@@ -86,28 +86,6 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         }),
       };
     }
-
-    // const commandInput = {
-    //   TableName: process.env.TABLE_NAME,
-    //   KeyConditionExpression: "movieId = :m",
-    //   FilterExpression: "reviewerName = :r",
-    //   ExpressionAttributeValues: {
-    //     ":m": movieId,
-    //     ":r": review,
-    //   },
-    // };
-
-    // const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
-
-    // return {
-    //   statusCode: 200,
-    //   headers: {
-    //     "content-type": "application/json",
-    //   },
-    //   body: JSON.stringify({
-    //     data: commandOutput.Items,
-    //   }),
-    // };
   } catch (error: any) {
     console.log(JSON.stringify(error));
     return {
