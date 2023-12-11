@@ -9,7 +9,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     console.log("Event: ", event);
     const parameters = event?.pathParameters;
     const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-    const reviewerName = parameters?.reviewName ? decodeURIComponent(parameters.reviewName) : undefined;
+    const review = parameters?.review ? decodeURIComponent(parameters.review) : undefined;
+
+    const yearPattern = /^\d{4}$/;
 
     if (!movieId) {
       return {
@@ -21,37 +23,91 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
 
-    if (!reviewerName) {
+    if (review === undefined) {
       return {
         statusCode: 400,
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ Message: "Reviewer name not provided" }),
+        body: JSON.stringify({ Message: "Review name or date not provided" }),
       };
     }
 
-    const commandInput = {
-      TableName: process.env.TABLE_NAME,
-      KeyConditionExpression: "movieId = :m",
-      FilterExpression: "reviewerName = :r",
-      ExpressionAttributeValues: {
-        ":m": movieId,
-        ":r": reviewerName,
-      },
-    };
+    const isYear = yearPattern.test(review);
 
-    const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
+    if (isYear) {
+      const date = review;
 
-    return {
-      statusCode: 200,
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        data: commandOutput.Items,
-      }),
-    };
+      const commandInput = {
+        TableName: process.env.TABLE_NAME,
+        KeyConditionExpression: "movieId = :m",
+        ExpressionAttributeValues: {
+          ":m": movieId,
+        },
+      };
+
+      const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
+
+      if (review && commandOutput.Items) {
+        commandOutput.Items = commandOutput.Items.filter((item) => item.reviewDate.startsWith(date));
+      }
+
+      return {
+        statusCode: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          data: commandOutput.Items,
+        }),
+      };
+    } else {
+      const reviewName = review;
+
+      const commandInput = {
+        TableName: process.env.TABLE_NAME,
+        KeyConditionExpression: "movieId = :m",
+        FilterExpression: "reviewerName = :r",
+        ExpressionAttributeValues: {
+          ":m": movieId,
+          ":r": reviewName,
+        },
+      };
+
+      const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
+
+      return {
+        statusCode: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          data: commandOutput.Items,
+        }),
+      };
+    }
+
+    // const commandInput = {
+    //   TableName: process.env.TABLE_NAME,
+    //   KeyConditionExpression: "movieId = :m",
+    //   FilterExpression: "reviewerName = :r",
+    //   ExpressionAttributeValues: {
+    //     ":m": movieId,
+    //     ":r": review,
+    //   },
+    // };
+
+    // const commandOutput = await ddbDocClient.send(new QueryCommand(commandInput));
+
+    // return {
+    //   statusCode: 200,
+    //   headers: {
+    //     "content-type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     data: commandOutput.Items,
+    //   }),
+    // };
   } catch (error: any) {
     console.log(JSON.stringify(error));
     return {
@@ -76,4 +132,11 @@ function createDDbDocClient() {
   };
   const translateConfig = { marshallOptions, unmarshallOptions };
   return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}
+
+function stringOrNumberToNumber(input: string | number | undefined): number | undefined {
+  if (typeof input === "string") {
+    return parseInt(input);
+  }
+  return input;
 }
