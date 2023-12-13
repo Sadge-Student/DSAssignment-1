@@ -111,10 +111,3 @@ function createDDbDocClient() {
   const translateConfig = { marshallOptions, unmarshallOptions };
   return DynamoDBDocumentClient.from(ddbClient, translateConfig);
 }
-
-function stringOrNumberToNumber(input: string | number | undefined): number | undefined {
-  if (typeof input === "string") {
-    return parseInt(input);
-  }
-  return input;
-}

@@ -136,4 +136,28 @@ export const reviews: Review[] = [
     reviewDate: "2023-12-09",
     reviewerName: "Michael Brown",
   },
+  {
+    movieId: 2345,
+    rating: 5,
+    review: "An enthralling journey with dynamic characters and a twisty plot. The pacing was perfect, keeping me on the edge of my seat.",
+    reviewDate: "2023-05-15",
+    reviewId: 7812,
+    reviewerName: "Alice Smith",
+  },
+  {
+    movieId: 8910,
+    rating: 3,
+    review: "A decent watch with good performances, although the script could have been tighter. The cinematography was noteworthy.",
+    reviewDate: "2023-04-10",
+    reviewId: 5291,
+    reviewerName: "Alice Smith",
+  },
+  {
+    movieId: 1122,
+    rating: 2,
+    review: "Struggled to maintain interest due to predictable plotlines. The acting was solid, but it couldn't save a lackluster script.",
+    reviewDate: "2023-06-22",
+    reviewId: 3456,
+    reviewerName: "Alice Smith",
+  },
 ];
