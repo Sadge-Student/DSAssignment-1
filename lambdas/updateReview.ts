@@ -18,7 +18,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
 
     if (!body) {
       return {
-        statusCode: 500,
+        statusCode: 400,
         headers: {
           "content-type": "application/json",
         },
@@ -28,7 +28,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
 
     if (!isValidBodyParams(body)) {
       return {
-        statusCode: 500,
+        statusCode: 400,
         headers: {
           "content-type": "application/json",
         },
@@ -101,8 +101,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       headers: {
         "content-type": "application/json",
       },
-      //   body: JSON.stringify({ message: "Internal Server Error" }),
-      body: JSON.stringify({ error }),
+      body: JSON.stringify({ message: "Internal Server Error" }),
     };
   }
 };

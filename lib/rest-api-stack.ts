@@ -7,6 +7,7 @@ import { Construct } from "constructs";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { generateBatch } from "../shared/util";
 import { movies, reviews } from "../seed/movies";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -27,6 +28,22 @@ export class RestAPIStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "MovieReviews",
     });
+
+    // Create an IAM role for the Lambda function
+    const translateLambdaRole = new iam.Role(this, "TranslateLambdaRole", {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    });
+
+    // Attach the necessary policies to the role
+    translateLambdaRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        resources: ["*"],
+        actions: ["translate:TranslateText"],
+      })
+    );
+
+    translateLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
 
     // Functions
     const getMovieByIdFn = new lambdanode.NodejsFunction(this, "GetMovieByIdFn", {
@@ -137,6 +154,19 @@ export class RestAPIStack extends cdk.Stack {
       },
     });
 
+    const getTranslatedReviewFn = new lambdanode.NodejsFunction(this, "GetTranslatedReviewFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: `${__dirname}/../lambdas/translateReview.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      role: translateLambdaRole,
+      environment: {
+        TABLE_NAME: movieReviewsTable.tableName,
+        REGION: "eu-west-1",
+      },
+    });
+
     new custom.AwsCustomResource(this, "moviesddbInitData", {
       onCreate: {
         service: "DynamoDB",
@@ -164,6 +194,7 @@ export class RestAPIStack extends cdk.Stack {
     movieReviewsTable.grantReadData(getMovieReviewsFn);
     movieReviewsTable.grantReadData(getMovieReviewsByNameFn);
     movieReviewsTable.grantReadData(getAllReviewsByNameFn);
+    movieReviewsTable.grantReadData(getTranslatedReviewFn);
 
     const api = new apig.RestApi(this, "RestAPI", {
       description: "demo api",
@@ -198,5 +229,8 @@ export class RestAPIStack extends cdk.Stack {
     const reviewEndpoint = reviewsEndpoint.addResource("{reviewerName}");
     reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getAllReviewsByNameFn, { proxy: true }));
     reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(newReviewFn, { proxy: true }));
+
+    const translationEndpoint = movieReviewEndpointByName.addResource("translation");
+    translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, { proxy: true }));
   }
 }
