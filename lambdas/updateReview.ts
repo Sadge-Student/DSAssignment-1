@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     const parameters = event.pathParameters;
     const body = event.body ? JSON.parse(event.body) : undefined;
     const movieId = parameters?.movieId ? parseInt(parameters.movieId) : undefined;
-    const reviewerName = parameters?.reviewName ? decodeURIComponent(parameters.reviewName) : undefined;
+    const review = parameters?.review ? decodeURIComponent(parameters.review) : undefined;
 
     if (!body) {
       return {
@@ -39,7 +39,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       };
     }
 
-    if (!movieId || !reviewerName) {
+    if (!movieId || !review) {
       return {
         statusCode: 400,
         headers: {
@@ -55,7 +55,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       FilterExpression: "reviewerName = :r",
       ExpressionAttributeValues: {
         ":m": movieId,
-        ":r": reviewerName,
+        ":r": review,
       },
     });
 

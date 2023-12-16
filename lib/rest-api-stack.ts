@@ -8,10 +8,55 @@ import * as apig from "aws-cdk-lib/aws-apigateway";
 import { generateBatch } from "../shared/util";
 import { movies, reviews } from "../seed/movies";
 import * as iam from "aws-cdk-lib/aws-iam";
+import { AuthApi } from "./auth-api";
+import { UserPool } from "aws-cdk-lib/aws-cognito";
+import * as node from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const userPool = new UserPool(this, "UserPool", {
+      signInAliases: { username: true, email: true },
+      selfSignUpEnabled: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const userPoolId = userPool.userPoolId;
+
+    const appClient = userPool.addClient("AppClient", {
+      authFlows: { userPassword: true },
+    });
+
+    const userPoolClientId = appClient.userPoolClientId;
+
+    new AuthApi(this, "AuthApi", {
+      userPoolId: userPoolId,
+      userPoolClientId: userPoolClientId,
+    });
+
+    const appCommonFnProps = {
+      architecture: lambda.Architecture.ARM_64,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      runtime: lambda.Runtime.NODEJS_16_X,
+      handler: "handler",
+      environment: {
+        USER_POOL_ID: userPoolId,
+        CLIENT_ID: userPoolClientId,
+        REGION: cdk.Aws.REGION,
+      },
+    };
+
+    const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
+      ...appCommonFnProps,
+      entry: "./lambdas/auth/authorizer.ts",
+    });
+
+    const restApiRequestAuthorizer = new apig.RequestAuthorizer(this, "RestApiRequestAuthorizer", {
+      identitySources: [apig.IdentitySource.header("cookie")],
+      handler: authorizerFn,
+    });
 
     // Tables
     const moviesTable = new dynamodb.Table(this, "MoviesTable", {
@@ -43,6 +88,7 @@ export class RestAPIStack extends cdk.Stack {
       })
     );
 
+    // Attach the necessary policies to the role
     translateLambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
 
     // Functions
@@ -177,7 +223,7 @@ export class RestAPIStack extends cdk.Stack {
             [movieReviewsTable.tableName]: generateBatch(reviews),
           },
         },
-        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
+        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"),
       },
       policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
         resources: [moviesTable.tableArn, movieReviewsTable.tableArn],
@@ -212,11 +258,17 @@ export class RestAPIStack extends cdk.Stack {
 
     const moviesEndpoint = api.root.addResource("movies");
     moviesEndpoint.addMethod("GET", new apig.LambdaIntegration(getAllMoviesFn, { proxy: true }));
-    moviesEndpoint.addMethod("POST", new apig.LambdaIntegration(newMovieFn, { proxy: true }));
+    moviesEndpoint.addMethod("POST", new apig.LambdaIntegration(newMovieFn, { proxy: true }), {
+      authorizer: restApiRequestAuthorizer,
+      authorizationType: apig.AuthorizationType.CUSTOM,
+    });
 
     const movieEndpoint = moviesEndpoint.addResource("{movieId}");
     movieEndpoint.addMethod("GET", new apig.LambdaIntegration(getMovieByIdFn, { proxy: true }));
-    movieEndpoint.addMethod("DELETE", new apig.LambdaIntegration(deleteMovieFn, { proxy: true }));
+    movieEndpoint.addMethod("DELETE", new apig.LambdaIntegration(deleteMovieFn, { proxy: true }), {
+      authorizer: restApiRequestAuthorizer,
+      authorizationType: apig.AuthorizationType.CUSTOM,
+    });
 
     const reviewsEndpoint = moviesEndpoint.addResource("reviews");
     const movieReviewEndpoint = movieEndpoint.addResource("reviews");
@@ -224,11 +276,17 @@ export class RestAPIStack extends cdk.Stack {
 
     const movieReviewEndpointByName = movieReviewEndpoint.addResource("{review}");
     movieReviewEndpointByName.addMethod("GET", new apig.LambdaIntegration(getMovieReviewsByNameFn, { proxy: true }));
-    movieReviewEndpointByName.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, { proxy: true }));
+    movieReviewEndpointByName.addMethod("PUT", new apig.LambdaIntegration(updateMovieReviewFn, { proxy: true }), {
+      authorizer: restApiRequestAuthorizer,
+      authorizationType: apig.AuthorizationType.CUSTOM,
+    });
 
     const reviewEndpoint = reviewsEndpoint.addResource("{reviewerName}");
     reviewEndpoint.addMethod("GET", new apig.LambdaIntegration(getAllReviewsByNameFn, { proxy: true }));
-    reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(newReviewFn, { proxy: true }));
+    reviewsEndpoint.addMethod("POST", new apig.LambdaIntegration(newReviewFn, { proxy: true }), {
+      authorizer: restApiRequestAuthorizer,
+      authorizationType: apig.AuthorizationType.CUSTOM,
+    });
 
     const translationEndpoint = movieReviewEndpointByName.addResource("translation");
     translationEndpoint.addMethod("GET", new apig.LambdaIntegration(getTranslatedReviewFn, { proxy: true }));
